@@ -1,0 +1,35 @@
+Network Security Homework 3 Jumproxy
+
+How to run:
+    I have built jumproxy into an executable that can be run using ./jumproxy and included it
+    this folder. This executable can be used as follows:
+
+        server> ./jumproxy -l 2222 -l key.txt localhost 22
+        client> ssh -o "ProxyCommand ./jumproxy -k key.txt localhost 2222" kali@localhost
+
+    Alternatively, the go file can be ran directly. In order to do this, first initialize a go module.
+    Then, run go get command to get all the required packages. It can then be run as follows:
+
+        server> go run . -l 2222 -l key.txt localhost 22
+        client> go run . "ProxyCommand ./jumproxy -k key.txt localhost 2222" kali@localhost
+
+    For more information on how to run jumproxy use:
+        ./jumproxy -h
+
+Implementation details:
+
+    My implementation of jump proxy utilizes net, crypto, io, and flag packages. I used the flag package for
+    command line parsing. The net package is used to make tcp connections and listen on a port.  
+    
+    This program requiredreading and writing concurrently from both ends of a connection. I used io.copy and 
+    go routines to accomplish this task. However, since io.copy automatically reads and writes internally, I 
+    had to provide custom reading functions for encryption and decryption. These functions work by overloading 
+    the default Read function of io.Reader with my own custom reader. In these readers, I ready and handle encryption 
+    and decryption accordingly. 
+
+    The crypto packages is used to encrypt the traffic back and forth between server and clinet. During encryption, 
+    I append the ciphertext two additional things. The first one is a fixed length nonce which is required for
+    decryption. Then, I add an additional 4 bytes to the begining to store the actual size of the nonce+cyphertext. 
+    This is done so that when decrypting traffic, I can extract the length of each ciphertext and read exactly that 
+    many bytes before I try to decrypt. This method essentially splits up the encrytption in chunks which are
+    continuously sent over the sockets. 
